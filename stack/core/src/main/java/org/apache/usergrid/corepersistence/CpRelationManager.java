@@ -260,40 +260,42 @@ public class CpRelationManager implements RelationManager {
         final org.apache.usergrid.persistence.model.entity.Entity cpEntity ) {
 
 
-        final GraphManager gm = managerCache.getGraphManager( applicationScope );
+        throw new UnsupportedOperationException( "Use the new interface" );
 
-        // loop through all types of edge to target
-
-
-        final ApplicationEntityIndex ei = managerCache.getEntityIndex( applicationScope );
-
-        final EntityIndexBatch entityIndexBatch = ei.createBatch();
-
-        final int count = gm.getEdgeTypesToTarget( new SimpleSearchEdgeType( cpHeadEntity.getId(), null, null ) )
-
-            // for each edge type, emit all the edges of that type
-            .flatMap( etype -> gm.loadEdgesToTarget(
-                new SimpleSearchByEdgeType( cpHeadEntity.getId(), etype, Long.MAX_VALUE,
-                    SearchByEdgeType.Order.DESCENDING, null ) ) )
-
-                //for each edge we receive index and add to the batch
-            .doOnNext( edge -> {
-                // reindex the entity in the source entity's collection or connection index
-
-                IndexEdge indexScope = generateScopeFromSource( edge );
-
-                entityIndexBatch.index( indexScope, cpEntity );
-
-            } ).doOnCompleted( () -> {
-                    Timer.Context timeElasticIndexBatch = updateCollectionTimer.time();
-                    entityIndexBatch.execute();
-                    timeElasticIndexBatch.stop();
-              } ).count().toBlocking().lastOrDefault( 0 );
-
-        //Adding graphite metrics
-
-
-        logger.debug( "updateContainingCollectionsAndCollections() updated {} indexes", count );
+//        final GraphManager gm = managerCache.getGraphManager( applicationScope );
+//
+//        // loop through all types of edge to target
+//
+//
+//        final ApplicationEntityIndex ei = managerCache.getEntityIndex( applicationScope );
+//
+//        final EntityIndexBatch entityIndexBatch = ei.createBatch();
+//
+//        final int count = gm.getEdgeTypesToTarget( new SimpleSearchEdgeType( cpHeadEntity.getId(), null, null ) )
+//
+//            // for each edge type, emit all the edges of that type
+//            .flatMap( etype -> gm.loadEdgesToTarget(
+//                new SimpleSearchByEdgeType( cpHeadEntity.getId(), etype, Long.MAX_VALUE,
+//                    SearchByEdgeType.Order.DESCENDING, null ) ) )
+//
+//                //for each edge we receive index and add to the batch
+//            .doOnNext( edge -> {
+//                // reindex the entity in the source entity's collection or connection index
+//
+//                IndexEdge indexScope = generateScopeFromSource( edge );
+//
+//                entityIndexBatch.index( indexScope, cpEntity );
+//
+//            } ).doOnCompleted( () -> {
+//                    Timer.Context timeElasticIndexBatch = updateCollectionTimer.time();
+//                    entityIndexBatch.execute();
+//                    timeElasticIndexBatch.stop();
+//              } ).count().toBlocking().lastOrDefault( 0 );
+//
+//        //Adding graphite metrics
+//
+//
+//        logger.debug( "updateContainingCollectionsAndCollections() updated {} indexes", count );
     }
 
 
