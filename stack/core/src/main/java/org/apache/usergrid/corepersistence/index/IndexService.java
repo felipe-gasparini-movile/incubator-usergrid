@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package org.apache.usergrid.corepersistence;
+package org.apache.usergrid.corepersistence.index;
 
 
 import java.util.UUID;
@@ -30,16 +30,21 @@ import rx.Observable;
 
 
 /**
- * Low level queue service for indexing entities
+ * Our low level indexing service operations
  */
-public interface IndexQueueService {
+public interface IndexService {
 
 
     /**
-     * Queue an entity to be index asynchronously
-     * @param applicationScope
-     * @param entityId
-     * @param version
+     *  Perform an index update of the entity's state from Cassandra
+     *
+     * @param applicationScope The scope of the entity
+     * @param entity The entity
+     *
+     * @return An observable with the count of every
      */
-    void queueEntityIndex( final ApplicationScope applicationScope, final Id entityId, final UUID version );
+    Observable<Integer> indexEntity( final ApplicationScope applicationScope, final Entity entity );
+
+
+
 }

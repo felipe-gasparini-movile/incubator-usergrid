@@ -65,8 +65,8 @@ public class AppInfoMigrationPlugin implements MigrationPlugin {
     @Inject
     final private MigrationInfoSerialization migrationInfoSerialization;
 
-    @Inject
-    final private EntityManagerFactory emf;
+//    @Inject
+//    final private EntityManagerFactory emf;
 
     @Inject
     final private EntityCollectionManagerFactory entityCollectionManagerFactory;

@@ -107,9 +107,6 @@ public class CpRelationManager implements RelationManager {
 
     private static final Logger logger = LoggerFactory.getLogger( CpRelationManager.class );
 
-
-    private CpEntityManagerFactory emf;
-
     private ManagerCache managerCache;
 
     private EntityManager em;
@@ -126,25 +123,18 @@ public class CpRelationManager implements RelationManager {
     private Timer updateCollectionTimer;
 
 
-    public CpRelationManager() {}
-
-
-    public CpRelationManager init( EntityManager em, CpEntityManagerFactory emf, UUID applicationId,
-                                   EntityRef headEntity, IndexBucketLocator indexBucketLocator,
-                                   MetricsFactory metricsFactory ) {
+    public CpRelationManager(final MetricsFactory metricsFactory, final ManagerCache managerCache, final EntityManager em, final UUID applicationId, final EntityRef headEntity ) {
 
         Assert.notNull( em, "Entity manager cannot be null" );
-        Assert.notNull( emf, "Entity manager factory cannot be null" );
         Assert.notNull( applicationId, "Application Id cannot be null" );
         Assert.notNull( headEntity, "Head entity cannot be null" );
         Assert.notNull( headEntity.getUuid(), "Head entity uuid cannot be null" );
         // TODO: this assert should not be failing
         //Assert.notNull( indexBucketLocator, "indexBucketLocator cannot be null" );
         this.em = em;
-        this.emf = emf;
         this.applicationId = applicationId;
         this.headEntity = headEntity;
-        this.managerCache = emf.getManagerCache();
+        this.managerCache = managerCache;
         this.applicationScope = CpNamingUtils.getApplicationScope( applicationId );
 
         this.metricsFactory = metricsFactory;
@@ -165,7 +155,7 @@ public class CpRelationManager implements RelationManager {
         Assert.notNull( cpHeadEntity, String
             .format( "cpHeadEntity cannot be null for entity id %s, app id %s", entityId.getUuid(), applicationId ) );
 
-        return this;
+
     }
 
 
@@ -496,9 +486,10 @@ public class CpRelationManager implements RelationManager {
         //            headEntityScope.getName()});
 
         if ( connectBack && collection != null && collection.getLinkedCollection() != null ) {
-            getRelationManager( itemEntity )
-                .addToCollection( collection.getLinkedCollection(), headEntity, cpHeadEntity, false );
-            getRelationManager( itemEntity ).addToCollection( collection.getLinkedCollection(), headEntity, false );
+            throw new UnsupportedOperationException( "Implement me directly in graph " );
+//            getRelationManager( itemEntity )
+//                .addToCollection( collection.getLinkedCollection(), headEntity, cpHeadEntity, false );
+//            getRelationManager( itemEntity ).addToCollection( collection.getLinkedCollection(), headEntity, false );
         }
 
         return itemEntity;
@@ -557,7 +548,8 @@ public class CpRelationManager implements RelationManager {
             addToCollection( collName, itemEntity );
 
             if ( collection != null && collection.getLinkedCollection() != null ) {
-                getRelationManager( getHeadEntity() ).addToCollection( collection.getLinkedCollection(), itemEntity );
+                throw new UnsupportedOperationException( "Implement me directly in graph " );
+//                getRelationManager( getHeadEntity() ).addToCollection( collection.getLinkedCollection(), itemEntity );
             }
         }
 
@@ -1046,12 +1038,6 @@ public class CpRelationManager implements RelationManager {
         throw new UnsupportedOperationException( "Not supported yet." );
     }
 
-
-    private CpRelationManager getRelationManager( EntityRef headEntity ) {
-        CpRelationManager rmi = new CpRelationManager();
-        rmi.init( em, emf, applicationId, headEntity, null, metricsFactory );
-        return rmi;
-    }
 
 
     /** side effect: converts headEntity into an Entity if it is an EntityRef! */

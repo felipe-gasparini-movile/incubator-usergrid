@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.usergrid.persistence.index.guice;
+package org.apache.usergrid.corepersistence;
 
 
 import org.safehaus.guicyfig.GuicyFigModule;
@@ -25,6 +25,8 @@ import org.apache.usergrid.persistence.core.guice.CommonModule;
 import org.apache.usergrid.persistence.core.guice.TestModule;
 import org.apache.usergrid.persistence.core.migration.data.MigrationDataProvider;
 import org.apache.usergrid.persistence.core.scope.ApplicationScope;
+import org.apache.usergrid.persistence.index.guice.IndexModule;
+import org.apache.usergrid.persistence.index.guice.IndexTestFig;
 
 import com.google.inject.Inject;
 import com.google.inject.TypeLiteral;
@@ -37,32 +39,9 @@ public class TestIndexModule extends TestModule {
     @Override
     protected void configure() {
 
-        install( new CommonModule());
-
-        // configure collections and our core astyanax framework
-        install( new IndexModule(){
-            @Override
-            public  void configureMigrationProvider(){
-
-                bind( new TypeLiteral<MigrationDataProvider<ApplicationScope>>() {} ).to(
-                    TestAllApplicationsObservable.class );
-            }
-        });
-        install( new GuicyFigModule(IndexTestFig.class) );
+        //this will break, we need to untagle this and move to guice in core completely
+        install( new CoreModule());
     }
 
-    public static class TestAllApplicationsObservable implements MigrationDataProvider<ApplicationScope>{
-
-        @Inject
-        public TestAllApplicationsObservable(){
-
-        }
-
-
-        @Override
-        public Observable<ApplicationScope> getData() {
-          return Observable.empty();
-        }
-    }
 
 }

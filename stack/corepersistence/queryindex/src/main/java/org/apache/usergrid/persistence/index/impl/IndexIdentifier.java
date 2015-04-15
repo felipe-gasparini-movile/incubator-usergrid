@@ -17,34 +17,30 @@
  * under the License.
  */
 
-package org.apache.usergrid.corepersistence;
-
-
-import java.util.UUID;
-
-import org.apache.usergrid.persistence.core.scope.ApplicationScope;
-import org.apache.usergrid.persistence.model.entity.Entity;
-import org.apache.usergrid.persistence.model.entity.Id;
-
-import rx.Observable;
+package org.apache.usergrid.persistence.index.impl;
 
 
 /**
- * Our low level indexing service operations
+ * Identifier for where an index is in underlying server
  */
-public interface IndexService {
-
+public interface IndexIdentifier {
 
     /**
-     *  Perform an index update of the entity's state from Cassandra
-     *
-     * @param applicationScope The scope of the entity
-     * @param entity The entity
-     *
-     * @return An observable with the count of every
+     * get the alias name
+     * @return
      */
-    Observable<Integer> indexEntity( final ApplicationScope applicationScope, final Entity entity );
+    IndexAlias getAlias();
 
+    /**
+     * get index name from suffix
+     * @param suffix
+     * @return
+     */
+    String getIndex( String suffix );
 
-
+    /**
+     * return unique string
+     * @return
+     */
+    String toString();
 }

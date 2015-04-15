@@ -17,12 +17,9 @@
  * under the License.
  */
 
-package org.apache.usergrid.corepersistence;
+package org.apache.usergrid.corepersistence.index;
 
 
-import java.util.Collection;
-
-import org.apache.usergrid.persistence.collection.serialization.SerializationFig;
 import org.apache.usergrid.persistence.core.scope.ApplicationScope;
 import org.apache.usergrid.persistence.entities.Application;
 import org.apache.usergrid.persistence.graph.Edge;
@@ -32,7 +29,8 @@ import org.apache.usergrid.persistence.graph.serialization.EdgesObservable;
 import org.apache.usergrid.persistence.index.ApplicationEntityIndex;
 import org.apache.usergrid.persistence.index.EntityIndexFactory;
 import org.apache.usergrid.persistence.index.IndexEdge;
-import org.apache.usergrid.persistence.index.impl.IndexIdentifierImpl;
+import org.apache.usergrid.persistence.index.IndexFig;
+import org.apache.usergrid.persistence.index.impl.IndexOperationMessage;
 import org.apache.usergrid.persistence.model.entity.Entity;
 import org.apache.usergrid.persistence.model.entity.Id;
 import org.apache.usergrid.persistence.schema.CollectionInfo;
@@ -42,8 +40,6 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 
 import rx.Observable;
-import rx.functions.Func1;
-import rx.observables.MathObservable;
 
 import static org.apache.usergrid.corepersistence.util.CpNamingUtils.generateScopeFromSource;
 import static org.apache.usergrid.corepersistence.util.CpNamingUtils.generateScopeToTarget;
@@ -59,16 +55,16 @@ public class IndexServiceImpl implements IndexService {
     private final GraphManagerFactory graphManagerFactory;
     private final EntityIndexFactory entityIndexFactory;
     private final EdgesObservable edgesObservable;
-    private final SerializationFig serializationFig;
+    private final IndexFig indexFig;
 
 
     @Inject
     public IndexServiceImpl( final GraphManagerFactory graphManagerFactory, final EntityIndexFactory entityIndexFactory,
-                             final EdgesObservable edgesObservable, final SerializationFig serializationFig ) {
+                             final EdgesObservable edgesObservable, IndexFig indexFig ) {
         this.graphManagerFactory = graphManagerFactory;
         this.entityIndexFactory = entityIndexFactory;
         this.edgesObservable = edgesObservable;
-        this.serializationFig = serializationFig;
+        this.indexFig = indexFig;
     }
 
 
@@ -76,55 +72,52 @@ public class IndexServiceImpl implements IndexService {
     public Observable<Integer> indexEntity( final ApplicationScope applicationScope, final Entity entity ) {
 
 
+        //bootstrap the lower modules from their caches
         final GraphManager gm = graphManagerFactory.createEdgeManager( applicationScope );
-
-        // loop through all types of edge to target
-
-
         final ApplicationEntityIndex ei = entityIndexFactory.createApplicationEntityIndex( applicationScope );
-
-
-        //get all the source edges for an entity
-        final Observable<Edge> edgesToTarget = edgesObservable.edgesToTarget( gm, entity.getId() );
 
 
         final Id entityId = entity.getId();
 
-        final Observable<IndexEdge> targetIndexEdges = edgesToTarget.map( edge -> generateScopeToTarget( edge ) );
 
+        //we always index in the target scope
+        final Observable<Edge> edgesToTarget = edgesObservable.edgesToTarget( gm, entityId );
+
+        //we may have to index
+        final Observable<IndexEdge> sourceEdgesToIndex = edgesToTarget.map( edge -> generateScopeToTarget( edge ) );
 
 
         //we might or might not need to index from target-> source
 
 
-        final Observable<IndexEdge>
-            targetSizes = getIndexEdgesToTarget( gm, ei, entity );
+        final Observable<IndexEdge> targetSizes = getIndexEdgesToTarget( gm, entityId );
 
 
-        final Observable<IndexIdentifierImpl.IndexOperationMessage> observable = Observable.merge( targetIndexEdges,
-            targetSizes ).buffer( serializationFig.getBufferSize() ).flatMap( buffer ->
-            Observable.from(buffer).collect( () -> ei.createBatch(), ( batch, indexEdge ) -> batch.index( indexEdge, entity ) ).flatMap( batch -> Observable.from( batch.execute() ) );
+        final Observable<IndexOperationMessage> observable =
+            //try to send a whole batch if we can
+            Observable.merge( sourceEdgesToIndex, targetSizes ).buffer( indexFig.getIndexBatchSize() )
+
+                //map into batches based on our buffer size
+                .flatMap( buffer -> Observable.from( buffer ).collect( () -> ei.createBatch(),
+                    ( batch, indexEdge ) -> batch.index( indexEdge, entity ) )
+                    //return the future from the batch execution
+                    .flatMap( batch -> Observable.from( batch.execute() ) ) );
+
+        observable.toBlocking().last();
 
 
-
-
-
-        final Observable<IndexIdentifierImpl.IndexOperationMessage> futures = Observable.merge()
-        return MathObservable.sumInteger( sourceSizes );
+        return Observable.just( 0 );
     }
 
 
     /**
      * Get index edgs to the target
-     * @param graphManager
-     * @param ei The application entity index
-     * @param entity The entity
-     * @return
+     *
+     * @param graphManager The graph manager
+     * @param entityId The entitie's id
      */
-    private Observable<IndexEdge> getIndexEdgesToTarget(
-        final GraphManager graphManager, final ApplicationEntityIndex ei, final Entity entity  ) {
+    private Observable<IndexEdge> getIndexEdgesToTarget( final GraphManager graphManager, final Id entityId ) {
 
-        final Id entityId = entity.getId();
         final String collectionName = InflectionUtils.pluralize( entityId.getType() );
 
 
@@ -149,8 +142,7 @@ public class IndexServiceImpl implements IndexService {
         /**
          * An observable of sizes as we execute batches
          */
-       return edgesObservable.getEdgesFromSource( graphManager, entityId, linkedCollection ).map( edge -> generateScopeFromSource( edge ) );
+        return edgesObservable.getEdgesFromSource( graphManager, entityId, linkedCollection )
+                              .map( edge -> generateScopeFromSource( edge ) );
     }
-
-
 }

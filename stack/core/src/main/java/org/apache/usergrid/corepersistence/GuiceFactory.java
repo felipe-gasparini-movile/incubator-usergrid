@@ -128,8 +128,8 @@ public class GuiceFactory implements FactoryBean<Injector>, ApplicationContextAw
             throw new RuntimeException( "Fatal error loading configuration.", e );
         }
 
-        //this is seriously fugly, and needs removed
-        injector = Guice.createInjector( new CoreModule( applicationContext ) );
+        //this is seriously fugly, and needs removed we shouldn't be mixing spring and guice
+        injector = Guice.createInjector( new CoreModule( ) );
 
         return injector;
     }
